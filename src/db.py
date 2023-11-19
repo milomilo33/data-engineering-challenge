@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:admin@localhost/events")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://db:5433/events?user=postgres&password=root")
 
 # SQLAlchemy
 engine = create_engine(DATABASE_URL)
