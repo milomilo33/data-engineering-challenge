@@ -68,7 +68,7 @@ def get_number_of_sessions(db: Session, user_id: str, input_date: datetime.date)
             l1.user_id = :user_id AND \
             {optional_part} \
             l1.is_login = true AND \
-            (l2.event_datetime - l1.event_datetime) >= interval \'1 minute\''),
+            (l2.event_datetime - l1.event_datetime) >= interval \'1 second\''),
         {'user_id': user_id, 'input_date': input_date}
     )
     for arr in result:
@@ -198,6 +198,96 @@ def get_total_revenue_in_usd(db: Session, input_date: datetime.date, country: bo
     return return_dict
 
 
+def get_number_of_paid_users(db: Session, input_date: datetime.date, country: bool):
+    optional_part_1 = ', u.country' if country else ''
+    optional_part_2 = 'GROUP BY u.country' if country else ''
+    optional_part_date = 'AND event_datetime::date = :input_date' if input_date else ''
+    result = db.execute(
+        text(f'''SELECT COUNT(*){optional_part_1} FROM registration
+                INNER JOIN "user" as u
+                ON u.id = registration.user_id
+                AND marketing_campaign IS NOT NULL AND marketing_campaign != ''
+                {optional_part_date} {optional_part_2}'''),
+        {'input_date': input_date}
+    )
+    return_dict = {}
+    idx = 0
+    for arr in result:
+        return_dict[idx] = (arr[0], arr[1]) if country else (arr[0])
+        idx += 1
+    return return_dict
+
+
+def get_average_number_of_sessions_for_users_with_sessions(db: Session, input_date: datetime.date, country: bool):
+    optional_part_1 = ', u.country' if country else ''
+    optional_part_2 = 'GROUP BY country' if country else ''
+    optional_part_3 = ', country' if country else ''
+    optional_part_date = 'AND event_datetime::date = :input_date' if input_date else ''
+    result = db.execute(
+        text(f'''SELECT AVG(session_count){optional_part_3} from 
+                    (SELECT COUNT(*) AS session_count{optional_part_1} FROM login_logout AS login
+                    INNER JOIN "user" as u
+                    ON u.id = login.user_id
+                    AND is_login = true
+                    {optional_part_date}
+                    INNER JOIN login_logout AS logout
+                    ON login.matching_login_or_logout_id = logout.id AND
+                    (logout.event_datetime - login.event_datetime) >= interval \'1 second\'
+                    GROUP BY login.user_id{optional_part_3})
+                    {optional_part_2}
+            '''),
+        {'input_date': input_date}
+    )
+    return_dict = {}
+    idx = 0
+    for arr in result:
+        return_dict[idx] = (arr[0], arr[1]) if country else (arr[0] if arr[0] else 0)
+        idx += 1
+    return return_dict
+
+
+def get_average_total_time_spent_in_game(db: Session, input_date: datetime.date, country: bool):
+    optional_part_1 = ', u.country' if country else ''
+    optional_part_2 = 'GROUP BY country' if country else ''
+    optional_part_3 = ', country' if country else ''
+    optional_part_date = 'AND event_datetime::date = :input_date' if input_date else ''
+    optional_part_select = '''
+        SUM(
+            EXTRACT(
+                EPOCH FROM (
+                    CASE
+                        WHEN logout.event_datetime::date > login.event_datetime::date
+                        THEN DATE_TRUNC('day', login.event_datetime) + INTERVAL '1 day'
+                        ELSE logout.event_datetime
+                    END
+                    - login.event_datetime
+                )
+            )
+        )
+    ''' if input_date else 'SUM(EXTRACT(EPOCH FROM (logout.event_datetime - login.event_datetime)))'
+    result = db.execute(
+        text(f'''SELECT AVG(total_time){optional_part_3} from 
+                    (SELECT {optional_part_select} AS total_time{optional_part_1} FROM login_logout AS login
+                    INNER JOIN "user" as u
+                    ON u.id = login.user_id
+                    AND is_login = true
+                    {optional_part_date}
+                    INNER JOIN login_logout AS logout
+                    ON login.matching_login_or_logout_id = logout.id AND
+                    (logout.event_datetime - login.event_datetime) >= interval \'1 second\'
+                    GROUP BY login.user_id{optional_part_3})
+                    {optional_part_2}
+            '''),
+        {'input_date': input_date}
+    )
+    return_dict = {}
+    idx = 0
+    for arr in result:
+        return_dict[idx] = (arr[0], arr[1]) if country else (arr[0] if arr[0] else 0)
+        idx += 1
+    return return_dict
+
+
 def insert_event(db: Session, event):
     match event.event_type:
         case 'registration':
@@ -229,7 +319,7 @@ def insert_registration_event(db: Session, registration_event):
 
     db.add_all([db_event, db_user, db_registration_event])
 
-    # Commit every 1000 records
+    # commit every 1000 records
     if len(db.new) % 1000 == 0:
         db.commit()
 
@@ -269,7 +359,7 @@ def insert_login_logout_event(db: Session, login_logout_event, is_login: bool):
     
     db.add_all([db_event, db_login_logout_event])
 
-    # Commit every 1000 records
+    # commit every 1000 records
     if len(db.new) % 1000 == 0:
         db.commit()
 
