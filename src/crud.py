@@ -310,7 +310,7 @@ def insert_registration_event(db: Session, registration_event):
                           device_os=registration_event.device_os,
                           marketing_campaign=registration_event.marketing_campaign)
     
-    event_datetime = datetime.fromtimestamp(registration_event.event_timestamp)
+    event_datetime = datetime.datetime.fromtimestamp(registration_event.event_timestamp)
     db_registration_event = models.Registration(id=registration_event.event_id,
                                                 event_datetime=event_datetime,
                                                 user_id=registration_event.user_id)
@@ -326,7 +326,7 @@ def insert_registration_event(db: Session, registration_event):
 
 def insert_transaction_event(db: Session, transaction_event):
     db_event = models.Event(id=transaction_event.event_id)
-    event_datetime = datetime.fromtimestamp(transaction_event.event_timestamp)
+    event_datetime = datetime.datetime.fromtimestamp(transaction_event.event_timestamp)
     db_transaction_event = models.Transaction(id=transaction_event.event_id,
                                               event_datetime=event_datetime,
                                               user_id=transaction_event.user_id,
@@ -344,7 +344,7 @@ def insert_transaction_event(db: Session, transaction_event):
 
 def insert_login_logout_event(db: Session, login_logout_event, is_login: bool):
     db_event = models.Event(id=login_logout_event.event_id)
-    event_datetime = datetime.fromtimestamp(login_logout_event.event_timestamp)
+    event_datetime = datetime.datetime.fromtimestamp(login_logout_event.event_timestamp)
     if is_login:
         db_login_logout_event = models.LoginLogout(id=login_logout_event.event_id,
                                               event_datetime=event_datetime,

@@ -26,17 +26,7 @@ def initialize(db: Session):
     # flatten
     all_events = pd.concat([all_events.drop(['event_data'], axis=1), all_events['event_data'].apply(pd.Series)], axis=1)
 
-    # data cleaning
-
-    # print(all_events.event_type.unique())
-    # print(all_events.event_id.unique())
-    # print(all_events.dtypes)
-    # print(all_events.head)
-    # print(all_events['event_id'].is_unique)
-    # print(all_events.sort_values(by='event_timestamp').event_timestamp)
-    # duplicate_rows = all_events.duplicated()
-    # print("Number of duplicate rows: ", duplicate_rows.sum())
-    # all_events.dropna
+    # --- data cleaning ---
 
     # drop rows with no event_id, timestamp or user_id
     all_events = all_events[all_events['event_id'].notna()]
@@ -46,14 +36,9 @@ def initialize(db: Session):
     # remove duplicates by id, keeping the chronologically first event
     all_events = all_events.sort_values(by='event_timestamp')
     all_events = all_events.drop_duplicates(subset='event_id', keep='first')
-    # print(str(START_DATE) + " - " + str(END_DATE))
-    # print("Before dates:")
-    # print(all_events)
 
     # dates (filter events that happened before May 8, 2010 or after May 22, 2010)
     all_events = all_events.query('event_timestamp >= @START_DATE and event_timestamp < @END_DATE')
-    # print("After dates:")
-    # print(all_events)
 
     # drop invalid event types
     all_events = all_events.loc[all_events['event_type'].isin(['registration', 'login', 'logout', 'transaction'])]
@@ -177,7 +162,7 @@ def initialize(db: Session):
                                 ~(all_events['transaction_currency'].isin(VALID_TRANSACTION_CURRENCY)))]
 
 
-    # populate database
+    # --- populate database ---
     registration_events = all_events[all_events['event_type'] == 'registration']
     registration_events.apply(lambda x: insert_event(db, x), axis=1)
     db.commit()
