@@ -117,7 +117,7 @@ def get_time_spent_in_game(user_id: str, input_date: str = '', db: Session = Dep
     return crud.get_time_spent_in_game(db, user_id, input_date)
 
 
-@app.get("/game/time-in-game", response_model=dict)
+@app.get("/game/daily-active-users", response_model=dict)
 def get_number_of_daily_active_users(input_date: str = '', country: bool = False, db: Session = Depends(get_db)):
     if input_date:
         try:
@@ -128,3 +128,29 @@ def get_number_of_daily_active_users(input_date: str = '', country: bool = False
     if not input_date:
         input_date = None
     return crud.get_number_of_daily_active_users(db, input_date, country)
+
+
+@app.get("/game/logins", response_model=dict)
+def get_number_of_logins(input_date: str = '', country: bool = False, db: Session = Depends(get_db)):
+    if input_date:
+        try:
+            input_date = datetime.date.fromisoformat(input_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Incorrect date format, should be YYYY-MM-DD.")
+    
+    if not input_date:
+        input_date = None
+    return crud.get_number_of_logins(db, input_date, country)
+
+
+@app.get("/game/revenue", response_model=dict)
+def get_total_revenue_in_usd(input_date: str = '', country: bool = False, db: Session = Depends(get_db)):
+    if input_date:
+        try:
+            input_date = datetime.date.fromisoformat(input_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Incorrect date format, should be YYYY-MM-DD.")
+    
+    if not input_date:
+        input_date = None
+    return crud.get_total_revenue_in_usd(db, input_date, country)

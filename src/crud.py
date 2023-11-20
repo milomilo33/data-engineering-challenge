@@ -151,11 +151,51 @@ def get_number_of_daily_active_users(db: Session, input_date: datetime.date, cou
         return_dict[idx] = (arr[0], arr[1]) if country else (arr[0])
         idx += 1
     return return_dict
+
+
+def get_number_of_logins(db: Session, input_date: datetime.date, country: bool):
+    optional_part_1 = ', u.country' if country else ''
+    optional_part_2 = 'GROUP BY u.country' if country else ''
+    optional_part_date = 'AND event_datetime::date = :input_date' if input_date else ''
+    result = db.execute(
+        text(f'''SELECT COUNT(*){optional_part_1} FROM login_logout
+                INNER JOIN "user" as u
+                ON u.id = login_logout.user_id
+                AND is_login = true
+                {optional_part_date} {optional_part_2}'''),
+        {'input_date': input_date}
+    )
+    return_dict = {}
+    idx = 0
+    for arr in result:
+        return_dict[idx] = (arr[0], arr[1]) if country else (arr[0])
+        idx += 1
+    return return_dict
             
 
-def get_total_revenue_in_usd():
+def get_total_revenue_in_usd(db: Session, input_date: datetime.date, country: bool):
     exchange_rates = pd.read_json(path_or_buf="./src/exchange_rates.jsonl", lines=True)
-    eur_to_usd = exchange_rates[exchange_rates['currency'] == 'EUR']['rate_to_usd'].first()
+    eur_to_usd = exchange_rates[exchange_rates['currency'] == 'EUR']['rate_to_usd'].iloc[0]
+
+    optional_part_1 = ', u.country' if country else ''
+    optional_part_2 = 'GROUP BY u.country' if country else ''
+    optional_part_date = 'AND event_datetime::date = :input_date' if input_date else ''
+    result = db.execute(
+        text(f'''SELECT SUM(CASE WHEN transaction_currency = 'EUR'
+                            THEN transaction_amount * :eur_to_usd
+                            ELSE transaction_amount
+                            END){optional_part_1} FROM transaction
+                INNER JOIN "user" as u
+                ON u.id = transaction.user_id
+                {optional_part_date} {optional_part_2}'''),
+        {'input_date': input_date, 'eur_to_usd': eur_to_usd}
+    )
+    return_dict = {}
+    idx = 0
+    for arr in result:
+        return_dict[idx] = (arr[0], arr[1]) if country else (arr[0] if arr[0] else 0)
+        idx += 1
+    return return_dict
 
 
 def insert_event(db: Session, event):

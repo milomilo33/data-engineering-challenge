@@ -136,6 +136,7 @@ def initialize(db: Session):
                         break
 
     login_logout_events = login_logout_events.loc[login_logout_events['valid'] == True]
+    login_logout_events.sort_values(by=['user_id', 'event_timestamp'], inplace=True) # --
 
     # filter transactions that are done outside the user's session
     transaction_events = all_events[all_events['event_type'] == 'transaction'].copy()
