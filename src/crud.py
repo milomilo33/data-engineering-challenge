@@ -1,11 +1,12 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
-from datetime import datetime
+import datetime
 
 import numpy as np
 
 from . import models
 
+END_DATE = datetime.datetime(2010, 5, 22).date()
 
 def get_country_of_user(db: Session, user_id: str):
     result = db.query(models.User.country).filter(models.User.id == user_id).first()
@@ -31,6 +32,29 @@ def get_number_of_logins(db: Session, user_id: str, input_date: datetime):
         for r in arr:
             return r
 
+
+def get_days_since_last_login(db: Session, user_id: str, input_date: datetime.date):
+    if not input_date:
+        input_date = END_DATE
+    result = db.execute(
+        text(
+            'SELECT MAX(event_datetime) FROM login_logout \
+            WHERE user_id = :user_id AND is_login = true AND event_datetime::date <= :input_date'),
+        {'user_id': user_id, 'input_date': input_date}
+    )
+    last_login_date, found = None, False
+    for arr in result:
+        if not arr:
+            return 'No login at or prior to this date.'
+        for r in arr:
+            if not r:
+                return 'No login at or prior to this date.'
+            last_login_date = r
+            found = True
+            break
+        if found: break
+    last_login_date = last_login_date.date()
+    return str((input_date - last_login_date).days)
 
 def insert_event(db: Session, event):
     match event.event_type:

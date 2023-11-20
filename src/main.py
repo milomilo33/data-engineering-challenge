@@ -76,3 +76,16 @@ def get_number_of_logins(user_id: str, input_date: str = '', db: Session = Depen
     if not input_date:
         input_date = None
     return crud.get_number_of_logins(db, user_id, input_date)
+
+
+@app.get("/user/days-since-login", response_model=str)
+def get_days_since_last_login(user_id: str, input_date: str = '', db: Session = Depends(get_db)):
+    if input_date:
+        try:
+            input_date = datetime.date.fromisoformat(input_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Incorrect date format, should be YYYY-MM-DD.")
+    
+    if not input_date:
+        input_date = None
+    return crud.get_days_since_last_login(db, user_id, input_date)
