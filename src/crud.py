@@ -73,6 +73,63 @@ def get_number_of_sessions(db: Session, user_id: str, input_date: datetime.date)
     for arr in result:
         for r in arr:
             return r
+        
+
+def get_time_spent_in_game(db: Session, user_id: str, input_date: datetime.date):
+    optional_part = 'AND login.event_datetime::date = :input_date' if input_date else ''
+    optional_part_select = '''
+        SUM(
+            EXTRACT(
+                EPOCH FROM (
+                    CASE
+                        WHEN logout.event_datetime::date > login.event_datetime::date
+                        THEN DATE_TRUNC('day', login.event_datetime) + INTERVAL '1 day'
+                        ELSE logout.event_datetime
+                    END
+                    - login.event_datetime
+                )
+            )
+        )
+    ''' if input_date else 'SUM(EXTRACT(EPOCH FROM (logout.event_datetime - login.event_datetime)))'
+    result = db.execute(
+        # calculating durations of all sessions, cutting off at midnight when there is a date parameter
+        text(f'''
+            SELECT {optional_part_select}
+            FROM login_logout AS login
+            JOIN login_logout AS logout
+            ON login.matching_login_or_logout_id = logout.id
+            AND login.user_id = :user_id
+            AND login.is_login = true
+            {optional_part}
+        '''),
+        {'user_id': user_id, 'input_date': input_date}
+    )
+    # when a date param is set, we should consider logins with no logouts for the time spent that day
+    if input_date:
+        sum = 0
+        for arr in result:
+            for r in arr:
+                if r:
+                    sum = r
+        result = db.execute(
+            text(f'''
+                SELECT SUM(EXTRACT(EPOCH FROM ((DATE_TRUNC('day', event_datetime) + INTERVAL '1 day') - event_datetime)))
+                FROM login_logout
+                WHERE user_id = :user_id AND is_login = true 
+                AND event_datetime::date = :input_date
+                AND matching_login_or_logout_id IS NULL
+            '''),
+            {'user_id': user_id, 'input_date': input_date}
+        )
+        for arr in result:
+            for r in arr:
+                if r:
+                    sum += r
+        return sum
+    else:
+        for arr in result:
+            for r in arr:
+                return r if r else 0
 
 
 def insert_event(db: Session, event):
