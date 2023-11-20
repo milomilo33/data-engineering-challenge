@@ -73,6 +73,7 @@ class Registration(Base):
     event_datetime = mapped_column(DateTime, nullable=False)
     user_id = mapped_column(ForeignKey("user.id"), nullable=False, unique=True)
 
+    user = relationship("User", back_populates="registrations")
 
 class User(Base):
     __tablename__ = "user"
@@ -82,6 +83,8 @@ class User(Base):
     name = mapped_column(String, nullable=False)
     device_os = mapped_column(String, nullable=False)
     marketing_campaign = mapped_column(String, nullable=True)
+
+    registrations = relationship("Registration", back_populates="user")
 
     __table_args__ = (
         CheckConstraint(device_os.in_(['iOS', 'Android', 'Web']), name='valid_device_os'),

@@ -21,6 +21,19 @@ def insert_event(db: Session, event):
             print("Insert error.")
 
 
+# def insert_user(db: Session, registration_event):
+#     db_user = models.User(id=registration_event.user_id,
+#                           country=registration_event.country,
+#                           name=registration_event.name,
+#                           device_os=registration_event.device_os,
+#                           marketing_campaign=registration_event.marketing_campaign)
+    
+#     db.add([db_event, db_user, db_registration_event])
+
+#     # Commit every 1000 records
+#     if len(db.new) % 1000 == 0:
+#         db.commit()
+
 def insert_registration_event(db: Session, registration_event):
     db_event = models.Event(id=registration_event.event_id)
     db_user = models.User(id=registration_event.user_id,
@@ -34,11 +47,18 @@ def insert_registration_event(db: Session, registration_event):
                                                 event_datetime=event_datetime,
                                                 user_id=registration_event.user_id)
     
-    db.add(db_event)
-    db.add(db_user)
-    db.commit()
-    db.add(db_registration_event)
-    db.commit()
+    db_registration_event.user = db_user
+
+    # db.add(db_event)
+    # db.add(db_user)
+    # db.commit()
+    # db.add(db_registration_event)
+    # db.commit()
+    db.add_all([db_event, db_user, db_registration_event])
+
+    # Commit every 1000 records
+    if len(db.new) % 1000 == 0:
+        db.commit()
 
 
 def insert_transaction_event(db: Session, transaction_event):
@@ -52,9 +72,12 @@ def insert_transaction_event(db: Session, transaction_event):
     
     db.add(db_event)
     db.add(db_transaction_event)
-    db.commit()
-    # db.refresh(db_event)
-    # db.refresh(db_transaction_event)
+    db.add_all([db_event, db_transaction_event])
+
+    # Commit every 1000 records
+    if len(db.new) % 1000 == 0:
+        db.commit()
+    # db.commit()
 
 
 def insert_login_logout_event(db: Session, login_logout_event, is_login: bool):
@@ -65,8 +88,9 @@ def insert_login_logout_event(db: Session, login_logout_event, is_login: bool):
                                               user_id=login_logout_event.user_id,
                                               is_login=is_login)
     
-    db.add(db_event)
-    db.add(db_login_logout_event)
-    db.commit()
-    # db.refresh(db_event)
-    # db.refresh(db_login_logout_event)
+    db.add_all([db_event, db_login_logout_event])
+    
+    # Commit every 1000 records
+    if len(db.new) % 1000 == 0:
+        db.commit()
+    # db.commit()

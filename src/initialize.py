@@ -104,7 +104,15 @@ def initialize(db: Session):
 
 
     # populate database
-    all_events.apply(lambda x: insert_event(db, x), axis=1)
+    registration_events = all_events[all_events['event_type'] == 'registration']
+    registration_events.apply(lambda x: insert_event(db, x), axis=1)
+    db.commit()
+
+    non_registration_events = all_events[all_events['event_type'] != 'registration']
+    non_registration_events.apply(lambda x: insert_event(db, x), axis=1)
+    db.commit()
+    
+    # all_events.apply(lambda x: insert_event(db, x), axis=1)
 
     end = time.time()
     print("Data cleaning and database population took: " + str(end - start) + "s.", flush=True)
