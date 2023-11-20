@@ -6,8 +6,10 @@ from . import crud, models
 from .db import SessionLocal, engine
 from .initialize import initialize
 
-models.Base.metadata.drop_all(bind=engine)
-models.Base.metadata.create_all(bind=engine)
+import datetime
+
+# models.Base.metadata.drop_all(bind=engine)
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -40,7 +42,7 @@ def init_db():
     finally:
         db.close()
 
-init_db()
+# init_db()
 
 @app.get("/")
 def read_root():
@@ -48,8 +50,29 @@ def read_root():
 
 
 @app.get("/user/country", response_model=str)
-def read_users(user_id: str, db: Session = Depends(get_db)):
+def get_country_of_user(user_id: str, db: Session = Depends(get_db)):
     country = crud.get_country_of_user(db, user_id)
     if not country:
         raise HTTPException(status_code=404, detail="User not found or country is invalid.")
     return country
+
+
+@app.get("/user/name", response_model=str)
+def get_name_of_user(user_id: str, db: Session = Depends(get_db)):
+    name = crud.get_name_of_user(db, user_id)
+    if not name:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return name
+
+
+@app.get("/user/logins", response_model=int)
+def get_number_of_logins(user_id: str, input_date: str = '', db: Session = Depends(get_db)):
+    if input_date:
+        try:
+            datetime.date.fromisoformat(input_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Incorrect date format, should be YYYY-MM-DD.")
+    
+    if not input_date:
+        input_date = None
+    return crud.get_number_of_logins(db, user_id, input_date)

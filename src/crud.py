@@ -8,7 +8,29 @@ from . import models
 
 
 def get_country_of_user(db: Session, user_id: str):
-    return db.query(models.User.country).filter(models.User.id == user_id).first()
+    result = db.query(models.User.country).filter(models.User.id == user_id).first()
+    if result:
+        for r in result:
+            return r
+
+
+def get_name_of_user(db: Session, user_id: str):
+    result = db.query(models.User.name).filter(models.User.id == user_id).first()
+    if result:
+        for r in result:
+            return r
+
+
+def get_number_of_logins(db: Session, user_id: str, input_date: datetime):
+    optional_part = ' AND event_datetime::date = :input_date' if input_date else ''
+    result = db.execute(
+        text('SELECT COUNT(*) FROM login_logout WHERE user_id = :user_id AND is_login = true' + optional_part),
+        {'user_id': user_id, 'input_date': input_date}
+    )
+    for arr in result:
+        for r in arr:
+            return r
+
 
 def insert_event(db: Session, event):
     match event.event_type:
@@ -84,6 +106,7 @@ def insert_login_logout_event(db: Session, login_logout_event, is_login: bool):
     # Commit every 1000 records
     if len(db.new) % 1000 == 0:
         db.commit()
+
 
 def add_matching_logout_ids(db: Session, login_event):
     if not np.isnan(login_event.matching_login_or_logout_id):
