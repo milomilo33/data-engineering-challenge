@@ -144,7 +144,7 @@ def get_number_of_daily_active_users(input_date: str = '', country: bool = False
 
 
 @app.get("/game/logins", response_model=dict, tags=["game"])
-def get_number_of_logins(input_date: str = '', country: bool = False, db: Session = Depends(get_db)):
+def get_number_of_logins_for_game(input_date: str = '', country: bool = False, db: Session = Depends(get_db)):
     if input_date:
         try:
             input_date = datetime.date.fromisoformat(input_date)
@@ -153,7 +153,7 @@ def get_number_of_logins(input_date: str = '', country: bool = False, db: Sessio
     
     if not input_date:
         input_date = None
-    return crud.get_number_of_logins(db, input_date, country)
+    return crud.get_number_of_logins_for_game(db, input_date, country)
 
 
 @app.get("/game/revenue", response_model=dict, tags=["game"])

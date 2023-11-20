@@ -153,7 +153,7 @@ def get_number_of_daily_active_users(db: Session, input_date: datetime.date, cou
     return return_dict
 
 
-def get_number_of_logins(db: Session, input_date: datetime.date, country: bool):
+def get_number_of_logins_for_game(db: Session, input_date: datetime.date, country: bool):
     optional_part_1 = ', u.country' if country else ''
     optional_part_2 = 'GROUP BY u.country' if country else ''
     optional_part_date = 'AND event_datetime::date = :input_date' if input_date else ''
