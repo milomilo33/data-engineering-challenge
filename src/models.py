@@ -117,3 +117,4 @@ class LoginLogout(Base):
     # if False, then Logout
     is_login = mapped_column(Boolean, nullable=False)
 
+    matching_login_or_logout_id = mapped_column(ForeignKey("login_logout.id"), nullable=True, unique=True)
