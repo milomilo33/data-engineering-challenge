@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session
 
 from . import crud, models
 from .db import SessionLocal, engine
+from .initialize import initialize
 
+models.Base.metadata.drop_all(bind=engine)
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -30,6 +32,15 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def init_db():
+    db = SessionLocal()
+    try:
+        initialize(db)
+    finally:
+        db.close()
+
+init_db()
 
 @app.get("/")
 def read_root():
