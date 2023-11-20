@@ -40,7 +40,7 @@ The following data cleaning steps were taken:
 To run this project, make sure you have Docker set up. Then simply, from the project's root folder:
 
 ```
-$ docker compose up -d
+$ docker compose up
 ```
 
 Once the containers are up and running, open [http://localhost:8001/docs](http://localhost:8001/docs), where you can see the documented API and easily test the API's endpoints with the required and optional parameters (displayed in the same order as the queries in the specification file):
