@@ -56,6 +56,25 @@ def get_days_since_last_login(db: Session, user_id: str, input_date: datetime.da
     last_login_date = last_login_date.date()
     return str((input_date - last_login_date).days)
 
+
+def get_number_of_sessions(db: Session, user_id: str, input_date: datetime.date):
+    optional_part = 'l1.event_datetime::date = :input_date AND' if input_date else ''
+    result = db.execute(
+        text(
+            f'SELECT COUNT(*) from login_logout AS l1 \
+            INNER JOIN login_logout AS l2 \
+            ON l1.matching_login_or_logout_id = l2.id AND \
+            l1.user_id = :user_id AND \
+            {optional_part} \
+            l1.is_login = true AND \
+            (l2.event_datetime - l1.event_datetime) >= interval \'1 minute\''),
+        {'user_id': user_id, 'input_date': input_date}
+    )
+    for arr in result:
+        for r in arr:
+            return r
+
+
 def insert_event(db: Session, event):
     match event.event_type:
         case 'registration':
